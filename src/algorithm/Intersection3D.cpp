@@ -139,9 +139,12 @@ struct Is_not_marked {
 };
 
 void _intersection_solid_triangle( const MarkedPolyhedron& pa, const CGAL::Triangle_3<Kernel>& tri, GeometrySet<3>& output )
+{}
+/*
+void _intersection_solid_triangle( const MarkedPolyhedron& pa, const CGAL::Triangle_3<Kernel>& tri, GeometrySet<3>& output )
 {
     BOOST_ASSERT( pa.is_closed() );
-    Split_visitor visitor( NULL, true );
+    Split_visitor visitor;
 
     MarkedPolyhedron polyb;
     polyb.make_triangle( tri.vertex( 0 ), tri.vertex( 1 ), tri.vertex( 2 ) );
@@ -260,6 +263,7 @@ void _intersection_solid_triangle( const MarkedPolyhedron& pa, const CGAL::Trian
         }
     }
 }
+*/
 
 void _intersection_solid_solid( const MarkedPolyhedron& pa, const MarkedPolyhedron& pb, GeometrySet<3>& output )
 {
