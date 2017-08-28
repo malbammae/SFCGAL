@@ -31,6 +31,7 @@
 #include <SFCGAL/detail/triangulate/triangulateInGeometrySet.h>
 
 #include <CGAL/IO/Polyhedron_iostream.h>
+#include <CGAL/Polygon_mesh_processing/corefinement.h>
 
 #include <SFCGAL/detail/Point_inside_polyhedron.h>
 
@@ -109,9 +110,12 @@ void _intersection_solid_segment( const PrimitiveHandle<3>& pa, const PrimitiveH
 
 
 #if CGAL_VERSION_NR < 1040301000 // version 4.3
+
 // Before 4.3, we pass CGAL::Tag_true to mark boundary halfedges
 typedef CGAL::Node_visitor_refine_polyhedra<MarkedPolyhedron, Kernel, CGAL::Tag_true> Split_visitor;
-#else
+
+#elif  CGAL_VERSION_NR < 1030500135 // version 4.10
+
 // Starting with 4.3, we must now pass a property_map
 template<class Polyhedron>
 struct Edge_mark_property_map {
@@ -128,6 +132,12 @@ struct Edge_mark_property_map {
     }
 };
 typedef CGAL::Node_visitor_refine_polyhedra<MarkedPolyhedron,Kernel,Edge_mark_property_map<MarkedPolyhedron> > Split_visitor;
+
+#else
+
+typedef CGAL::Corefinement::Combinatorial_map_output_builder<MarkedPolyhedron> Output_builder;
+typedef CGAL::Node_visitor_refine_polyhedra<MarkedPolyhedron, Output_builder> Split_visitor;
+
 #endif
 
 typedef std::vector<Kernel::Point_3> Polyline_3;
@@ -138,50 +148,44 @@ struct Is_not_marked {
     }
 };
 
-void _intersection_solid_triangle( const MarkedPolyhedron& pa, const CGAL::Triangle_3<Kernel>& tri, GeometrySet<3>& output )
-{}
-/*
+
 void _intersection_solid_triangle( const MarkedPolyhedron& pa, const CGAL::Triangle_3<Kernel>& tri, GeometrySet<3>& output )
 {
     BOOST_ASSERT( pa.is_closed() );
-    Split_visitor visitor;
 
     MarkedPolyhedron polyb;
     polyb.make_triangle( tri.vertex( 0 ), tri.vertex( 1 ), tri.vertex( 2 ) );
 
-    MarkedPolyhedron& polya = const_cast<MarkedPolyhedron&>( pa );
-    std::list<Polyline_3> polylines;
-    CGAL::Intersection_of_Polyhedra_3<MarkedPolyhedron,Kernel, Split_visitor> intersect_polys( visitor );
-    intersect_polys( polya, polyb, std::back_inserter( polylines ) );
+    MarkedPolyhedron polya( pa );
 
-    Point_inside_polyhedron<MarkedPolyhedron, Kernel> point_inside_q( polya );
+    MarkedPolyhedron out;
 
-    if ( polylines.size() == 0 ) {
-        // no surface intersection
-        // if one of the point of the triangle is inside the polyhedron,
-        // the triangle is inside
-        if ( point_inside_q( tri.vertex( 0 ) ) != CGAL::ON_UNBOUNDED_SIDE ) {
-            output.addPrimitive( tri );
-            return;
-        }
+    CGAL::Polygon_mesh_processing::corefine_and_compute_intersection( 
+            polya, 
+            polyb, 
+            out, 
+            CGAL::Polygon_mesh_processing::parameters::face_index_map(get(CGAL::face_external_index, polya)), 
+            CGAL::Polygon_mesh_processing::parameters::face_index_map(get(CGAL::face_external_index, polyb)) );
 
-        return;
-    }
+    std::cout << "out " << out.empty() << " f=" << out.size_of_facets() << " he=" << out.size_of_halfedges() << " v=" << out.size_of_vertices() << "\n";
 
     // triangle decomposition
     std::list<MarkedPolyhedron> decomposition;
     Is_not_marked criterion;
 #if CGAL_VERSION_NR < 1040701000 // version 4.7
     // Before 4.7, extract_connected_components lies in CGAL::internal
-    CGAL::internal::extract_connected_components( polyb, criterion, std::back_inserter( decomposition ) );
+    CGAL::internal::extract_connected_components( out, criterion, std::back_inserter( decomposition ) );
 #else
     // After 4.7, it's now in CGAL::internal::corefinement
-    CGAL::internal::corefinement::extract_connected_components( polyb, criterion, std::back_inserter( decomposition ) );
+    CGAL::internal::corefinement::extract_connected_components( out, criterion, std::back_inserter( decomposition ) );
 #endif
 
     bool hasSurface = false;
 
     for ( std::list<MarkedPolyhedron>::iterator it = decomposition.begin(); it != decomposition.end(); ++it ) {
+        std::cout << "  f=" << it->size_of_facets() << " he=" << it->size_of_halfedges() << " v=" << it->size_of_vertices() << "\n";
+    }
+        /*
         // char fname[256];
         // sprintf(fname, "decompo%d.off", k++);
         // std::ofstream decompo(fname);
@@ -189,6 +193,8 @@ void _intersection_solid_triangle( const MarkedPolyhedron& pa, const CGAL::Trian
 
         // take a point on the component and tests if its inside the other polyhedron
         //
+
+        /
         CGAL::Point_3<Kernel> test_point;
 
         if ( it->size_of_facets() == 1 ) {
@@ -262,8 +268,8 @@ void _intersection_solid_triangle( const MarkedPolyhedron& pa, const CGAL::Trian
             }
         }
     }
+    */
 }
-*/
 
 void _intersection_solid_solid( const MarkedPolyhedron& pa, const MarkedPolyhedron& pb, GeometrySet<3>& output )
 {

@@ -759,7 +759,7 @@ squared_distance_t squaredDistanceSegmentTriangle3D(
     /*
      * If [sAsB] intersects the triangle (tA,tB,tC), distance is 0.0
      */
-    if ( ! CGAL::intersection( sAB, tABC ).empty() ) {
+    if ( boost::none == CGAL::intersection( sAB, tABC ) ) {
         return 0.0 ;
     }
 
@@ -817,7 +817,7 @@ squared_distance_t squaredDistanceTriangleTriangle3D(
     const Triangle_3& triangleB
 )
 {
-    if ( ! CGAL::intersection( triangleA, triangleB ).empty() ) {
+    if ( boost::none == CGAL::intersection( triangleA, triangleB ) ) {
         return squared_distance_t( 0 );
     }
 
