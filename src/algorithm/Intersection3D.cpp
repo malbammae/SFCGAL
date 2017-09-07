@@ -135,8 +135,21 @@ typedef CGAL::Node_visitor_refine_polyhedra<MarkedPolyhedron,Kernel,Edge_mark_pr
 
 #else
 
-typedef CGAL::Corefinement::Combinatorial_map_output_builder<MarkedPolyhedron> Output_builder;
-typedef CGAL::Node_visitor_refine_polyhedra<MarkedPolyhedron, Output_builder> Split_visitor;
+template<class Polyhedron>
+struct Edge_mark_property_map {
+    typedef bool value_type;
+    typedef value_type reference;
+    typedef std::pair<typename Polyhedron::Halfedge_handle,Polyhedron*> key_type;
+    typedef boost::read_write_property_map_tag category;
+
+    friend reference get( Edge_mark_property_map,const key_type& key ) {
+        return key.first->mark;
+    }
+    friend void put( Edge_mark_property_map,key_type key,value_type v ) {
+        key.first->mark=v;
+    }
+};
+typedef CGAL::Node_visitor_refine_polyhedra<MarkedPolyhedron, CGAL::Default, CGAL::Default,Edge_mark_property_map<MarkedPolyhedron> > Split_visitor;
 
 #endif
 
@@ -152,7 +165,7 @@ struct Is_not_marked {
 void _intersection_solid_triangle( const MarkedPolyhedron& pa, const CGAL::Triangle_3<Kernel>& tri, GeometrySet<3>& output )
 {
     BOOST_ASSERT( pa.is_closed() );
-    Split_visitor visitor( NULL, true );
+    Split_visitor visitor;
 
     MarkedPolyhedron polyb;
     polyb.make_triangle( tri.vertex( 0 ), tri.vertex( 1 ), tri.vertex( 2 ) );
