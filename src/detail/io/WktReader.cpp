@@ -647,7 +647,15 @@ bool WktReader::readPointCoordinate( Point& p )
         }
 
         p = Point( coordinates[0], coordinates[1], coordinates[2] );
-        p.setM( coordinates[3].to_double() );
+        p.setM(coordinates[3]
+        #if CGAL_USE_GMPXX
+            .get_d()
+        #else
+            .to_double()
+        #endif
+         );
+
+        
     }
     else if ( _isMeasured && ! _is3D ) {
         // XYM
@@ -656,7 +664,13 @@ bool WktReader::readPointCoordinate( Point& p )
         }
 
         p = Point( coordinates[0], coordinates[1] );
-        p.setM( coordinates[2].to_double() );
+        p.setM( coordinates[2]
+        #if CGAL_USE_GMPXX
+            .get_d()
+        #else
+            .to_double()
+        #endif
+        );
     }
     else if ( coordinates.size() == 3 ) {
         // XYZ

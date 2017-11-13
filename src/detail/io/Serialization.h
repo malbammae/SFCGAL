@@ -132,6 +132,47 @@ void serialize( Archive& ar, CGAL::Gmpq& q, const unsigned int version )
     split_free( ar, q, version );
 }
 
+#ifdef CGAL_USE_GMPXX
+template<class Archive>
+void save( Archive& ar, const ::mpq_class& q, const unsigned int /*version*/ )
+{
+    ::mpz_class n = q.get_num();
+    ::mpz_class d = q.get_den();
+    ar& n;
+    ar& d;
+}
+template<class Archive>
+void load( Archive& ar, ::mpq_class& q, const unsigned int /*version*/ )
+{
+    ::mpz_class n;
+    ::mpz_class d;
+    ar& n;
+    ar& d;
+    q = ::mpq_class( n, d );
+}
+template<class Archive>
+void serialize( Archive& ar, ::mpq_class& q, const unsigned int version )
+{
+    split_free( ar, q, version );
+}
+
+template<class Archive>
+void save( Archive& ar, const ::mpz_class& q, const unsigned int /*version*/ )
+{
+    ar << q;
+}
+template<class Archive>
+void load( Archive& ar, ::mpz_class& q, const unsigned int /*version*/ )
+{
+    ::mpz_class n;
+    ar >> q;
+}
+template<class Archive>
+void serialize( Archive& ar, ::mpz_class& q, const unsigned int version )
+{
+    split_free( ar, q, version );
+}
+#endif
 
 /**
  * Serializer of Kernel::FT
